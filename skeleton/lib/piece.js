@@ -24,7 +24,11 @@ Piece.prototype.flip = function () {
  * based on its color.
  */
 Piece.prototype.toString = function () {
-  return this.color;
+  if (this.color === "white") {
+    return "W";
+  } else {
+    return "B";
+  }
 };
 
 module.exports = Piece;
