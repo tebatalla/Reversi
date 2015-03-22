@@ -144,7 +144,7 @@ Board.prototype.validMove = function (pos, color) {
     return false;
   }
   var positions = [];
-  for(var dir in this.DIRS) {
+  for(var dir in Board.DIRS) {
     positions.push(_positionsToFlip(this, pos, color, dir, []));
   }
   return !!positions.length;
