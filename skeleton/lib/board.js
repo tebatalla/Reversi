@@ -78,7 +78,7 @@ Board.prototype.isOver = function () {
  */
 Board.prototype.isValidPos = function (pos) {
   return !(pos[0] < 0 || pos[1] < 0 ||
-    pos[0] > this.grid.length || pos[1] > this.grid[0].length);
+    pos[0] >= this.grid.length || pos[1] >= this.grid[0].length);
 };
 
 /**
@@ -95,19 +95,29 @@ Board.prototype.isValidPos = function (pos) {
  * Returns null if no pieces of the opposite color are found.
  */
 function _positionsToFlip (board, pos, color, dir, piecesToFlip) {
-  if (!board.isValidPos(pos)) {
+  var newPos= [];
+  newPos[0] = pos[0] + dir[0];
+  newPos[1] = pos[1] + dir[1];
+  if (!board.isValidPos(newPos)) {
     return null;
-  } else if (!board.isOccupied(pos)) {
+  } else if (!board.isOccupied(newPos)) {
     return null;
-  } else if (board.isMine(pos, color)) {
-    return (piecesToFlip.length === 0) ? null : piecesToFlip;
+  } else if (!board.isMine(newPos, color)) {
+    piecesToFlip.push(board.getPiece(newPos));
   } else {
-    piecesToFlip.push(board.getPiece(pos));
+    if (piecesToFlip.length === 0) {
+      return null;
+    } else {
+      return piecesToFlip;
+    }
   }
-  pos[0] += dir[0];
-  pos[1] += dir[1];
 
-  return _positionsToFlip(board, pos, color, dir, piecesToFlip);
+  var result = _positionsToFlip(board, newPos, color, dir, piecesToFlip);
+  if (result === null) {
+    return null;
+  } else {
+    return result.indexOf(null) > -1 ? null : result;
+  }
 }
 
 /**
@@ -117,12 +127,19 @@ function _positionsToFlip (board, pos, color, dir, piecesToFlip) {
  * Throws an error if the position represents an invalid move.
  */
 Board.prototype.placePiece = function (pos, color) {
+  var pieces;
   if (!this.validMove(pos, color)) {
     throw new Error("Invalid Move");
   } else {
-    for(var dir in this.DIRS) {
-      for(var piece in _positionsToFlip(this, pos, color, dir, [])) {
-        piece.flip();
+    this.grid[pos[0]][pos[1]] = new Piece(color);
+    for(var i = 0; i < Board.DIRS.length; i++) {
+      var dir = Board.DIRS[i];
+      pieces = _positionsToFlip(this, pos, color, dir, []);
+      if (pieces != null) {
+        for(var j = 0; j < pieces.length; j++) {
+          var piece = pieces[j];
+          piece.flip();
+        }
       }
     }
   }
@@ -143,11 +160,13 @@ Board.prototype.validMove = function (pos, color) {
   if (this.isOccupied(pos)) {
     return false;
   }
-  var positions = [];
-  for(var dir in Board.DIRS) {
-    positions.push(_positionsToFlip(this, pos, color, dir, []));
+  for(var i = 0; i < Board.DIRS.length; i++) {
+    var dir = Board.DIRS[i];
+    if (!!_positionsToFlip(this, pos, color, dir, [])) {
+      return true;
+    }
   }
-  return !!positions.length;
+  return false;
 };
 
 /**
